@@ -2,11 +2,13 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
+using chtt.Models;
 
 namespace chtt.Models
 {
-    public class chttContext : DbContext
+    public class chttContext : IdentityDbContext<User>
     {
         public DbSet<Conversation> Room { get; set; }
         public DbSet<Message> Message { get; set; }
@@ -15,6 +17,8 @@ namespace chtt.Models
             : base(options)
         {
         }
+
+        public DbSet<chtt.Models.User> User { get; set; }
 
 
     }
