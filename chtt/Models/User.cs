@@ -2,15 +2,8 @@
 
 namespace chtt.Models
 {
-    public class User
+    public class User : IdentityUser
     {
         public int UserId { get; set; }
-        
-
-
-        public User()
-        {
-
-        }
     }
 }
