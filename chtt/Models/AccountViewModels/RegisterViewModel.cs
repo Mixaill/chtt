@@ -1,8 +1,8 @@
 ﻿using System.ComponentModel.DataAnnotations;
 
-namespace chtt.ViewModels
+namespace chtt.Models.AccountViewModels
 {
-    public class AccountRegisterViewModel
+    public class RegisterViewModel
     {
         [Required]
         [EmailAddress]

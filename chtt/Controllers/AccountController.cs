@@ -7,9 +7,10 @@ using System.Threading.Tasks;
 
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Configuration;
 
 using chtt.Models;
-using chtt.ViewModels;
+using chtt.Models.AccountViewModels;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.IdentityModel.Tokens;
 
@@ -17,15 +18,19 @@ namespace chtt.Controllers
 {
     [Produces("application/json")]
     [Route("api/Account")]
+    [Authorize]
     public class AccountController : Controller
     {
         private readonly UserManager<User> _userManager;
         private readonly SignInManager<User> _signInManager;
 
-        public AccountController(UserManager<User> userManager, SignInManager<User> signInManager)
+        private IConfiguration _configuration;
+
+        public AccountController(UserManager<User> userManager, SignInManager<User> signInManager, IConfiguration configuration)
         {
             _userManager = userManager;
             _signInManager = signInManager;
+            _configuration = configuration;
         }
 
 
@@ -33,9 +38,10 @@ namespace chtt.Controllers
         /// Logins into existing account
         /// </summary>
         [HttpPost("Login")]
+        [AllowAnonymous]
         [ProducesResponseType(typeof(object), 200)]
         [ProducesResponseType(typeof(IDictionary<string, string>), 400)]
-        public async Task<IActionResult> LoginAccount([FromBody] AccountLoginViewModel userInput)
+        public async Task<IActionResult> LoginAccount([FromBody] LoginViewModel userInput)
         {
             if (ModelState.IsValid)
             {
@@ -53,8 +59,8 @@ namespace chtt.Controllers
 
             var token = new JwtSecurityToken
             (
-                issuer: "test",
-                audience: "test",
+                issuer: _configuration["JWT:Issuer"],
+                audience: _configuration["JWT:Audience"],
                 claims: new[]
                 {
                     new Claim(JwtRegisteredClaimNames.Sub, userInput.Email),
@@ -62,7 +68,7 @@ namespace chtt.Controllers
                 },
                 expires: DateTime.UtcNow.AddDays(60),
                 notBefore: DateTime.UtcNow,
-                signingCredentials: new SigningCredentials(new SymmetricSecurityKey(Encoding.UTF8.GetBytes("testtesttesttesttest")), SecurityAlgorithms.HmacSha256)
+                signingCredentials: new SigningCredentials(new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_configuration["JWT:SecurityKey"])), SecurityAlgorithms.HmacSha256)
             );
 
             return Ok(new { token = new JwtSecurityTokenHandler().WriteToken(token) });
@@ -71,7 +77,6 @@ namespace chtt.Controllers
         /// <summary>
         /// Log outs from account
         /// </summary>
-        [Authorize]
         [HttpPost("Logout")]
         [ProducesResponseType(typeof(void), 204)]
         [ProducesResponseType(typeof(void), 404)]
@@ -85,10 +90,11 @@ namespace chtt.Controllers
         /// Registers a new user account
         /// </summary>
         /// <returns></returns>
+        [AllowAnonymous]
         [HttpPost("Register")]
         [ProducesResponseType(typeof(void), 204)]
         [ProducesResponseType(typeof(IDictionary<string, string>), 400)]
-        public async Task<IActionResult> RegisterAccount([FromBody] AccountRegisterViewModel userInput)
+        public async Task<IActionResult> RegisterAccount([FromBody] RegisterViewModel userInput)
         {
             if (ModelState.IsValid)
             {

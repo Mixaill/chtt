@@ -1,11 +1,11 @@
 ﻿using System.ComponentModel.DataAnnotations;
 
-namespace chtt.ViewModels
+namespace chtt.Models.AccountViewModels
 {
-    public class AccountLoginViewModel
+    public class LoginViewModel
     {
         [Required]
-        [EmailAddress]
+        [EmailAddress]    
         public string Email { get; set; }
 
         [Required]
