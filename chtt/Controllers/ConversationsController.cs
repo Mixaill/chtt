@@ -11,6 +11,7 @@ namespace chtt.Controllers
 {
     [Produces("application/json")]
     [Route("api/Conversations")]
+    [Authorize]
     public class ConversationsController : Controller
     {
         private readonly chttContext _context;

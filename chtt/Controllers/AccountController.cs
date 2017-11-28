@@ -79,7 +79,7 @@ namespace chtt.Controllers
         /// </summary>
         [HttpPost("Logout")]
         [ProducesResponseType(typeof(void), 204)]
-        [ProducesResponseType(typeof(void), 404)]
+        [ProducesResponseType(typeof(void), 401)]
         public async Task<IActionResult> LogoutAccount()
         {
             await _signInManager.SignOutAsync();
