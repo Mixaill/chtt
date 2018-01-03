@@ -1,0 +1,11 @@
+language: csharp
+dist: trusty
+sudo: required
+dotnet: 2.1.3
+
+install:
+- dotnet restore
+
+script:
+- dotnet build
+- dotnet test chtt.Tests/chtt.Tests.csproj
