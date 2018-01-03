@@ -12,6 +12,7 @@ namespace chtt.Controllers
 {
     [Produces("application/json")]
     [Route("api/Users")]
+    [Authorize]
     public class UsersController : Controller
     {
         private readonly chttContext _context;
