@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Security.Claims;
 using System.Threading.Tasks;
@@ -33,6 +34,10 @@ namespace chtt.Controllers
         [ProducesResponseType(typeof(void), 401)]
         public async Task<IActionResult> GetConversations()
         {
+            if (User == null)
+            {
+                return Unauthorized();
+            }
             var currentUser = await _userManager.FindByNameAsync(User.FindFirstValue(ClaimTypes.NameIdentifier));
 
             var conversations = new List<GetViewModel>();
@@ -40,7 +45,7 @@ namespace chtt.Controllers
             var query = _context.Conversation.Include(x => x.Author).Include("ConversationUsers.User");
             await query.LoadAsync();
 
-            foreach (var conversation in query.Where(x => x.Users.Any(y=>y.Id == currentUser.Id)))
+            foreach (var conversation in query.Where(x => x.Users.Any(y => y.Id == currentUser.Id)))
             {
                 conversations.Add(new GetViewModel(conversation));
             }
@@ -72,7 +77,7 @@ namespace chtt.Controllers
 
             if (!conversation.Users.Contains(currentUser))
             {
-                Forbid();
+                return Forbid();
             }
 
             return Ok(new GetViewModel(conversation));
