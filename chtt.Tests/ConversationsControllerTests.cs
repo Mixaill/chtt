@@ -229,6 +229,31 @@ namespace chtt.Tests
             Assert.Equal(400, res.StatusCode);
         }
 
+        [Fact]
+        public void DeleteConversation_Exists()
+        {
+            var controller = GetConversationController();
+            var res = controller.DeleteConversation(2).Result as NoContentResult;
+            Assert.NotNull(res);
+            Assert.Equal(204, res.StatusCode);
+        }
+
+        [Fact]
+        public void DeleteConversation_Forbidden()
+        {
+            var controller = GetConversationController();
+            var res = controller.DeleteConversation(3).Result as ForbidResult;
+            Assert.NotNull(res);
+        }
+
+        [Fact]
+        public void DeleteConversation_NotExists()
+        {
+            var controller = GetConversationController();
+            var res = controller.DeleteConversation(4).Result as NotFoundResult;
+            Assert.NotNull(res);
+            Assert.Equal(404, res.StatusCode);
+        }
 
     }
 }
