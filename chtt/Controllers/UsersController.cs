@@ -1,12 +1,15 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Linq;
+using System.Security.Claims;
 using System.Threading.Tasks;
-using Microsoft.AspNetCore.Http;
+
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+
 using chtt.Models;
-using Microsoft.AspNetCore.Authorization;
+using chtt.Models.UsersViewModels;
 
 namespace chtt.Controllers
 {
@@ -16,113 +19,89 @@ namespace chtt.Controllers
     public class UsersController : Controller
     {
         private readonly chttContext _context;
+        private readonly UserManager<User> _userManager;
 
-        public UsersController(chttContext context)
+        public UsersController(chttContext context, UserManager<User> userManager)
         {
             _context = context;
+            _userManager = userManager;
         }
 
         // GET: api/Users
+        /// <summary>
+        /// Get list of all users
+        /// </summary>
+        /// <returns></returns>
         [HttpGet]
-        public IEnumerable<User> GetUser()
+        [ProducesResponseType(typeof(void), 200)]
+        [ProducesResponseType(typeof(void), 401)]
+        public async Task<IActionResult> GetUser()
         {
-            return _context.User;
+            return Ok(_context.User.Select(x => new GetViewModel(x)));
         }
-
-        // GET: api/Users/5
-        [HttpGet("{id}")]
-        public async Task<IActionResult> GetUser([FromRoute] string id)
+        
+        // GET: api/Users/<Username>
+        /// <summary>
+        /// Get data about particular user
+        /// </summary>
+        /// <param name="username"></param>
+        /// <returns></returns>
+        [HttpGet("{username}")]
+        [ProducesResponseType(typeof(void), 200)]
+        [ProducesResponseType(typeof(void), 401)]
+        [ProducesResponseType(typeof(void), 404)]
+        public async Task<IActionResult> GetUser([FromRoute] string username)
         {
             if (!ModelState.IsValid)
             {
                 return BadRequest(ModelState);
             }
 
-            var user = await _context.User.SingleOrDefaultAsync(m => m.Id == id);
+            var user = await _context.User.SingleOrDefaultAsync(m => m.UserName == username);
 
             if (user == null)
             {
                 return NotFound();
             }
 
-            return Ok(user);
+            return Ok(new GetViewModel(user));
         }
 
-        // PUT: api/Users/5
-        [HttpPut("{id}")]
-        public async Task<IActionResult> PutUser([FromRoute] string id, [FromBody] User user)
+        // PUT: api/Users/username
+        /// <summary>
+        /// Updates current user last online time
+        /// </summary>
+        /// <param name="username"></param>
+        /// <returns></returns>
+        [HttpPut("{username}")]
+        [ProducesResponseType(typeof(void), 204)]
+        [ProducesResponseType(typeof(void), 400)]
+        [ProducesResponseType(typeof(void), 401)]
+        [ProducesResponseType(typeof(void), 403)]
+        public async Task<IActionResult> PutUser([FromRoute] string username)
         {
             if (!ModelState.IsValid)
             {
                 return BadRequest(ModelState);
             }
 
-            if (id != user.Id)
+            var currentUser = await _userManager.FindByNameAsync(User.FindFirstValue(ClaimTypes.NameIdentifier));
+
+            if (currentUser.NormalizedUserName != username.ToUpper())
             {
-                return BadRequest();
+                return Forbid();
             }
 
-            _context.Entry(user).State = EntityState.Modified;
+            var user = await _context.User.Where(x => x.NormalizedUserName == username.ToUpper()).SingleOrDefaultAsync();
+            if (user == null)
+            {
+                return NotFound();
+            }
 
-            try
-            {
-                await _context.SaveChangesAsync();
-            }
-            catch (DbUpdateConcurrencyException)
-            {
-                if (!UserExists(id))
-                {
-                    return NotFound();
-                }
-                else
-                {
-                    throw;
-                }
-            }
+            user.LastOnline = DateTime.UtcNow;
+            await _context.SaveChangesAsync();
 
             return NoContent();
-        }
-
-        // POST: api/Users
-        [HttpPost]
-        public async Task<IActionResult> PostUser([FromBody] User user)
-        {
-            if (!ModelState.IsValid)
-            {
-                return BadRequest(ModelState);
-            }
-
-            _context.User.Add(user);
-            await _context.SaveChangesAsync();
-
-            return CreatedAtAction("GetUser", new { id = user.Id }, user);
-        }
-
-        // DELETE: api/Users/5
-        [HttpDelete("{id}")]
-        [Authorize]
-        public async Task<IActionResult> DeleteUser([FromRoute] string id)
-        {
-            if (!ModelState.IsValid)
-            {
-                return BadRequest(ModelState);
-            }
-
-            var user = await _context.User.SingleOrDefaultAsync(m => m.Id == id);
-            if (user == null)
-            {
-                return NotFound();
-            }
-
-            _context.User.Remove(user);
-            await _context.SaveChangesAsync();
-
-            return Ok(user);
-        }
-
-        private bool UserExists(string id)
-        {
-            return _context.User.Any(e => e.Id == id);
         }
     }
 }
