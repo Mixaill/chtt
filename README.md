@@ -1,3 +1,5 @@
+[![Build Status](https://travis-ci.org/Mixaill/chtt.svg?branch=master)](https://travis-ci.org/Mixaill/chtt)
+
 # Chtt
 Simple ASP.Net Core chat
 
