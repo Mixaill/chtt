@@ -74,6 +74,26 @@ namespace chtt.Tests
                 User = User
             });
 
+            var _message = new Message()
+            {
+                MessageId = 2,
+                Author = User,
+                Content = "test message",
+                Conversation = _conversation,
+                Timestamp = DateTime.UtcNow
+            };
+            context.Message.Add(_message);
+
+            var _otherMessage = new Message()
+            {
+                MessageId = 3,
+                Author = _otherUser,
+                Content = "test message2",
+                Conversation = _otherConversation,
+                Timestamp = DateTime.UtcNow
+            };
+            context.Message.Add(_otherMessage);
+
             context.SaveChanges();
 
             return context;
