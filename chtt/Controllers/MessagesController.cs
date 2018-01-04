@@ -1,11 +1,14 @@
-﻿using System.Collections.Generic;
-using System.Linq;
+﻿using System.Linq;
+using System.Security.Claims;
 using System.Threading.Tasks;
+
+using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.AspNetCore.Authorization;
 
 using chtt.Models;
+using chtt.Models.MessagesViewModels;
 
 namespace chtt.Controllers
 {
@@ -15,21 +18,25 @@ namespace chtt.Controllers
     public class MessagesController : Controller
     {
         private readonly chttContext _context;
+        private readonly UserManager<User> _userManager;
 
-        public MessagesController(chttContext context)
+        public MessagesController(chttContext context, UserManager<User> userManager)
         {
             _context = context;
+            _userManager = userManager;
         }
 
-        // GET: api/Messages
-        [HttpGet]
-        public IEnumerable<Message> GetMessage()
-        {
-            return _context.Message;
-        }
-
+        /// <summary>
+        /// Get info about particular message
+        /// </summary>
+        /// <param name="id"></param>
+        /// <returns></returns>
         // GET: api/Messages/5
         [HttpGet("{id}")]
+        [ProducesResponseType(typeof(void), 200)]
+        [ProducesResponseType(typeof(void), 401)]
+        [ProducesResponseType(typeof(void), 403)]
+        [ProducesResponseType(typeof(void), 404)]
         public async Task<IActionResult> GetMessage([FromRoute] int id)
         {
             if (!ModelState.IsValid)
@@ -38,67 +45,75 @@ namespace chtt.Controllers
             }
 
             var message = await _context.Message.SingleOrDefaultAsync(m => m.MessageId == id);
-
             if (message == null)
             {
                 return NotFound();
             }
 
-            return Ok(message);
-        }
+            var currentUser = await _userManager.FindByNameAsync(User.FindFirstValue(ClaimTypes.NameIdentifier));
 
-        // PUT: api/Messages/5
-        [HttpPut("{id}")]
-        public async Task<IActionResult> PutMessage([FromRoute] int id, [FromBody] Message message)
-        {
-            if (!ModelState.IsValid)
+            var conversation = await _context.Conversation.SingleOrDefaultAsync(c => c == message.Conversation);
+            if (!conversation.Users.Contains(currentUser))
             {
-                return BadRequest(ModelState);
+                return Forbid();
             }
 
-            if (id != message.MessageId)
-            {
-                return BadRequest();
-            }
-
-            _context.Entry(message).State = EntityState.Modified;
-
-            try
-            {
-                await _context.SaveChangesAsync();
-            }
-            catch (DbUpdateConcurrencyException)
-            {
-                if (!MessageExists(id))
-                {
-                    return NotFound();
-                }
-                else
-                {
-                    throw;
-                }
-            }
-
-            return NoContent();
+            return Ok(new GetViewModel(message));
         }
 
         // POST: api/Messages
+        /// <summary>
+        /// Creates message
+        /// </summary>
         [HttpPost]
-        public async Task<IActionResult> PostMessage([FromBody] Message message)
+        [ProducesResponseType(typeof(void), 201)]
+        [ProducesResponseType(typeof(void), 401)]
+        [ProducesResponseType(typeof(void), 403)]
+        [ProducesResponseType(typeof(void), 404)]
+        public async Task<IActionResult> PostMessage([FromBody] CreateMessageViewModel messageModel)
         {
             if (!ModelState.IsValid)
             {
                 return BadRequest(ModelState);
             }
+
+            var currentUser = await _userManager.FindByNameAsync(User.FindFirstValue(ClaimTypes.NameIdentifier));
+
+            var conversation = await _context.Conversation.SingleOrDefaultAsync(c => c.ConversationId == messageModel.ConversationId);
+            if (conversation == null)
+            {
+                return NotFound();
+            }
+
+            if (!conversation.Users.Contains(currentUser))
+            {
+                return Forbid();
+            }
+
+            var message = new Message
+            {
+                Conversation = conversation,
+                Content = messageModel.Content,
+                Author = currentUser,
+            };
 
             _context.Message.Add(message);
             await _context.SaveChangesAsync();
 
-            return CreatedAtAction("GetMessage", new { id = message.MessageId }, message);
+            return CreatedAtAction("GetMessage", new { id = message.MessageId }, new GetViewModel(message));
         }
 
+        /// <summary>
+        /// Delete message
+        /// </summary>
+        /// <param name="id"></param>
+        /// <returns></returns>
         // DELETE: api/Messages/5
         [HttpDelete("{id}")]
+        [ProducesResponseType(typeof(void), 204)]
+        [ProducesResponseType(typeof(void), 401)]
+        [ProducesResponseType(typeof(void), 403)]
+        [ProducesResponseType(typeof(void), 404)]
         public async Task<IActionResult> DeleteMessage([FromRoute] int id)
         {
             if (!ModelState.IsValid)
@@ -112,15 +127,18 @@ namespace chtt.Controllers
                 return NotFound();
             }
 
+            var currentUser = await _userManager.FindByNameAsync(User.FindFirstValue(ClaimTypes.NameIdentifier));
+
+            var conversation = await _context.Conversation.SingleOrDefaultAsync(c => c == message.Conversation);
+            if (!conversation.Users.Contains(currentUser))
+            {
+                return Forbid();
+            }
+
             _context.Message.Remove(message);
             await _context.SaveChangesAsync();
 
-            return Ok(message);
-        }
-
-        private bool MessageExists(int id)
-        {
-            return _context.Message.Any(e => e.MessageId == id);
+            return NoContent();
         }
     }
 }
