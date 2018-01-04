@@ -35,9 +35,14 @@ namespace chtt.Controllers
         [HttpGet]
         [ProducesResponseType(typeof(void), 200)]
         [ProducesResponseType(typeof(void), 401)]
-        public async Task<IActionResult> GetUser()
+        public async Task<IActionResult> GetUsers()
         {
-            return Ok(_context.User.Select(x => new GetViewModel(x)));
+            if (User == null)
+            {
+                return Unauthorized();
+            }
+
+            return Ok(await _context.User.Select(x => new GetViewModel(x)).ToListAsync());
         }
         
         // GET: api/Users/<Username>
