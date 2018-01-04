@@ -11,9 +11,10 @@ using System;
 namespace chtt.Migrations
 {
     [DbContext(typeof(chttContext))]
-    partial class chttContextModelSnapshot : ModelSnapshot
+    [Migration("20180103195148_init2")]
+    partial class init2
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
