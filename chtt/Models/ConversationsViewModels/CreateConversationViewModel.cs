@@ -2,7 +2,7 @@
 
 namespace chtt.Models.ConversationsViewModels
 {
-    public class CreateViewModel
+    public class CreateConversationViewModel
     {
         [MinLength(1)]
         public string Name { get; set; }

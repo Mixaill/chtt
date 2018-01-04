@@ -29,6 +29,9 @@ namespace chtt.Controllers
         }
 
         // GET: api/Conversations
+        /// <summary>
+        /// Gets list of all conversations
+        /// </summary>
         [HttpGet]
         [ProducesResponseType(typeof(void), 200)]
         [ProducesResponseType(typeof(void), 401)]
@@ -54,6 +57,9 @@ namespace chtt.Controllers
         }
 
         // GET: api/Conversations/5
+        /// <summary>
+        /// Get particular conversation details
+        /// </summary>
         [HttpGet("{id}")]
         [ProducesResponseType(typeof(void), 200)]
         [ProducesResponseType(typeof(void), 401)]
@@ -84,6 +90,9 @@ namespace chtt.Controllers
         }
 
         // PUT: api/Conversations/5
+        /// <summary>
+        /// Update particular conversation info
+        /// </summary>
         [HttpPut("{id}")]
         [ProducesResponseType(typeof(void), 204)]
         [ProducesResponseType(typeof(void), 401)]
@@ -158,10 +167,13 @@ namespace chtt.Controllers
         }
 
         // POST: api/Conversations
+        /// <summary>
+        /// Creates new conversation
+        /// </summary>
         [HttpPost]
         [ProducesResponseType(typeof(void), 200)]
         [ProducesResponseType(typeof(void), 401)]
-        public async Task<IActionResult> PostConversation([FromBody] CreateViewModel createViewModel)
+        public async Task<IActionResult> PostConversation([FromBody] CreateConversationViewModel createConversationViewModel)
         {
             if (!ModelState.IsValid)
             {
@@ -172,8 +184,8 @@ namespace chtt.Controllers
 
             var conversation = new Conversation
             {
-                Name = createViewModel.Name,
-                Description = createViewModel.Description,
+                Name = createConversationViewModel.Name,
+                Description = createConversationViewModel.Description,
                 Author = currentUser,
             }; 
 
@@ -185,7 +197,10 @@ namespace chtt.Controllers
             return CreatedAtAction("GetConversation", new { id = conversation.ConversationId }, new GetViewModel(conversation));
         }
 
-        // DELETE: api/Conversations/5s
+        // DELETE: api/Conversations/5
+        /// <summary>
+        /// Deletes conversation
+        /// </summary>
         [HttpDelete("{id}")]
         [ProducesResponseType(typeof(void), 200)]
         [ProducesResponseType(typeof(void), 401)]
@@ -216,5 +231,42 @@ namespace chtt.Controllers
 
             return NoContent();
         }
+
+
+        /// <summary>
+        /// Get list of Ids of all messages
+        /// </summary>
+        // GET: api/Conversation/5/Messages
+        [HttpGet("{id}/Messages")]
+        [ProducesResponseType(typeof(void), 200)]
+        [ProducesResponseType(typeof(void), 401)]
+        [ProducesResponseType(typeof(void), 403)]
+        [ProducesResponseType(typeof(void), 404)]
+        public async Task<IActionResult> GetConversationMessages([FromRoute] int id)
+        {
+            if (!ModelState.IsValid)
+            {
+                return BadRequest(ModelState);
+            }
+
+
+            var currentUser = await _userManager.FindByNameAsync(User.FindFirstValue(ClaimTypes.NameIdentifier));
+
+            var conversation = await _context.Conversation.SingleOrDefaultAsync(c => c.ConversationId == id);
+            if (conversation == null)
+            {
+                return NotFound();
+            }
+
+            if (!conversation.Users.Contains(currentUser))
+            {
+                return Forbid();
+            }
+
+            var messagesIds = await _context.Message.Where(y => y.Conversation == conversation).Select(x => x.MessageId).ToListAsync();
+
+            return Ok(messagesIds);
+        }
+
     }
 }

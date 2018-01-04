@@ -83,7 +83,7 @@ namespace chtt.Tests
         {
             var controller = GetController();
 
-            var c = new CreateViewModel
+            var c = new CreateConversationViewModel
             {
                 Name = "testname_post",
                 Description = "testdescr_post"
@@ -102,7 +102,7 @@ namespace chtt.Tests
                 ConversationId = 2,
                 Description = "test description",
                 Name = "test name",
-                Users = new List<string>() { "Test" }
+                Users = new List<string>() { "test@test.it" }
             };
             var res = controller.PutConversation(2, u).Result as NoContentResult;
             Assert.NotNull(res);
@@ -150,6 +150,35 @@ namespace chtt.Tests
             var res = controller.DeleteConversation(4).Result as NotFoundResult;
             Assert.NotNull(res);
             Assert.Equal(404, res.StatusCode);
+        }
+
+        [Fact]
+        public void GetConversationMessages_Exists()
+        {
+            var controller = GetController();
+            var res = controller.GetConversationMessages(2).Result as OkObjectResult;
+            Assert.NotNull(res);
+            Assert.Equal(200, res.StatusCode);
+
+            var val = res.Value as List<int>;
+            Assert.Single(val);
+        }
+
+        [Fact]
+        public void GetConversationMessages_NotExists()
+        {
+            var controller = GetController();
+            var res = controller.GetConversationMessages(4).Result as NotFoundResult;
+            Assert.NotNull(res);
+            Assert.Equal(404, res.StatusCode);
+        }
+
+        [Fact]
+        public void GetConversationMessages_Forbidden()
+        {
+            var controller = GetController();
+            var res = controller.GetConversationMessages(3).Result as ForbidResult;
+            Assert.NotNull(res);
         }
 
     }
